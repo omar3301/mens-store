@@ -3,9 +3,9 @@ import { ChevronLeft, ChevronDown, Trash2, Package, Loader } from "lucide-react"
 import { EGYPT_GOVS, FREE_SHIPPING_THRESHOLD, getShipping, firstImg } from "../data/products";
 
 // ─── API base URL ─────────────────────────────────────
-// During dev: http://localhost:5000
+
 // After deploy: set VITE_API_URL in your .env file
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "https://back-end-production-afdf.up.railway.app";
 
 // ─── Reusable Input ───────────────────────────────────
 const UInput = memo(function UInput({ label, name, type = "text", error, inputRef, placeholder }) {
