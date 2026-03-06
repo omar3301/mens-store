@@ -81,7 +81,7 @@ export default function App() {
 
       {/* ── WhatsApp button ── */}
       {/* ⚠️ Replace 201XXXXXXXXX with your real WhatsApp number */}
-      <a href="https://wa.me/201XXXXXXXXX" target="_blank" rel="noreferrer"
+      <a href="https://wa.me/201010886611" target="_blank" rel="noreferrer"
         style={{ position: "fixed", bottom: "28px", right: "22px", zIndex: 1500, width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(37,211,102,0.4)", transition: "transform 0.2s" }}
         onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
         onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
