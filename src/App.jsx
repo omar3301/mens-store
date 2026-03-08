@@ -2,32 +2,39 @@ import { useState, useEffect, useRef, memo } from "react";
 import { ShoppingBag, Menu, X, ArrowRight, Instagram, ChevronDown, Search, Check } from "lucide-react";
 
 import { fetchProducts, firstImg } from "./data/products";
-import ProductCard    from "./components/ProductCard";
-import ProductPopup   from "./components/ProductPopup";
-import CartDrawer     from "./components/CartDrawer";
-import CheckoutPage   from "./pages/CheckoutPage";
+import ProductCard     from "./components/ProductCard";
+import ProductPage     from "./pages/ProductPage";
+import CartDrawer      from "./components/CartDrawer";
+import CheckoutPage    from "./pages/CheckoutPage";
 import OrderConfirmPage from "./pages/OrderConfirmPage";
 
 import "./styles/global.css";
 
-// ─── Tiny FadeIn wrapper ─────────────────────────────
 const FadeIn = memo(({ children, style }) =>
   <div style={{ animation: "fadeUp 0.8s ease 0.1s both", ...style }}>{children}</div>
 );
 
-// ─── APP ─────────────────────────────────────────────
 export default function App() {
-  const [page, setPage]             = useState("home");
-  const [popup, setPopup]           = useState(null);
-  const [cartOpen, setCartOpen]     = useState(false);
-  const [mobileNav, setMobileNav]   = useState(false);
-  const [subscribed, setSub]        = useState(false);
-  const [email, setEmail]           = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [page, setPage]               = useState("home");
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [cartOpen, setCartOpen]       = useState(false);
+  const [mobileNav, setMobileNav]     = useState(false);
+  const [subscribed, setSub]          = useState(false);
+  const [email, setEmail]             = useState("");
+  const [searchOpen, setSearchOpen]   = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [toast, setToast]           = useState(null);
-  const [orderNum, setOrderNum]     = useState("");
+  const [toast, setToast]             = useState(null);
+  const [orderNum, setOrderNum]       = useState("");
+  const [products, setProducts]       = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
   const searchRef = useRef();
+
+  // ── Fetch products from backend ──────────────────────
+  useEffect(() => {
+    fetchProducts()
+      .then(data => { setProducts(data); setProductsLoading(false); })
+      .catch(() => setProductsLoading(false));
+  }, []);
 
   // ── Cart — persisted to localStorage ────────────────
   const [cart, setCart] = useState(() => {
@@ -38,23 +45,13 @@ export default function App() {
     try { localStorage.setItem("sola_cart", JSON.stringify(cart)); } catch {}
   }, [cart]);
 
-  // ── Toast ────────────────────────────────────────────
-  // ── Products — fetched from backend ─────────────────
-  const [products, setProducts]       = useState([]);
-  const [productsLoading, setProductsLoading] = useState(true);
-  useEffect(() => {
-    fetchProducts()
-      .then(data => { setProducts(data); setProductsLoading(false); })
-      .catch(() => setProductsLoading(false));
-  }, []);
-
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2400); };
 
   // ── Search ───────────────────────────────────────────
   const filteredProducts = searchQuery.trim()
     ? products.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : products;
@@ -63,41 +60,80 @@ export default function App() {
   const closeSearch = () => { setSearchOpen(false); setSearchQuery(""); };
 
   // ── Cart actions ─────────────────────────────────────
-  const addToCart = (product, size, color) => {
-    const key = `${product.id}-${size}-${color}`;
+  const addToCart = (product) => {
+    const key = `${product._id || product.id}`;
     setCart(prev => {
-      if (prev.find(i => `${i.id}-${i.size}-${i.color}` === key)) return prev;
-      return [...prev, { ...product, size, color, qty: 1 }];
+      if (prev.find(i => `${i._id || i.id}` === key)) return prev;
+      return [...prev, { ...product, qty: 1 }];
     });
-    showToast(`${product.name} reserved`);
+    showToast(`${product.name} added`);
+    setCartOpen(true); // ← open cart drawer on add
   };
-  const removeItem = (key) => setCart(prev => prev.filter(i => `${i.id}-${i.size}-${i.color}` !== key));
+
+  const buyNow = (product) => {
+    const key = `${product._id || product.id}`;
+    setCart(prev => {
+      if (prev.find(i => `${i._id || i.id}` === key)) return prev;
+      return [...prev, { ...product, qty: 1 }];
+    });
+    setPage("checkout"); // ← go directly to checkout
+  };
+
+  const removeItem = (key) => setCart(prev => prev.filter(i => `${i._id || i.id}` !== key));
   const totalQty   = cart.reduce((s, i) => s + (i.qty || 1), 0);
 
-  // ── Render pages ──────────────────────────────────────
-  if (page === "checkout")     return <CheckoutPage    cart={cart} onBack={() => setPage("home")} onPlaceOrder={(orderNum) => { setCart([]); setOrderNum(orderNum); setPage("orderConfirm"); }} onRemoveItem={removeItem} />;
-  if (page === "orderConfirm") return <OrderConfirmPage orderNumber={orderNum} onContinue={() => setPage("home")} />;
+  // ── Page routing ──────────────────────────────────────
+  if (page === "checkout")     return <CheckoutPage cart={cart} onBack={() => setPage(selectedProduct ? "product" : "home")} onPlaceOrder={(num) => { setCart([]); setOrderNum(num); setPage("orderConfirm"); }} onRemoveItem={removeItem} />;
+  if (page === "orderConfirm") return <OrderConfirmPage orderNumber={orderNum} onContinue={() => { setPage("home"); setSelectedProduct(null); }} />;
 
+  if (page === "product" && selectedProduct) return (
+    <>
+      {/* Floating cart button on product page */}
+      <div style={{ position: "fixed", bottom: "28px", right: "22px", zIndex: 1500, display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end" }}>
+        <button onClick={() => setCartOpen(true)} style={{ width: "54px", height: "54px", borderRadius: "50%", backgroundColor: "#1A1816", color: "#FAF9F7", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 20px rgba(26,24,22,0.35)", position: "relative", transition: "transform 0.2s" }}
+          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.08)"}
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+          <ShoppingBag size={20} strokeWidth={1.6} />
+          {totalQty > 0 && <span style={{ position: "absolute", top: "-2px", right: "-2px", backgroundColor: "#B8966E", color: "#fff", fontSize: "8px", fontWeight: 700, width: "18px", height: "18px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{totalQty}</span>}
+        </button>
+      </div>
+      {cartOpen && <CartDrawer cart={cart} onClose={() => setCartOpen(false)} onCheckout={() => setPage("checkout")} onRemoveItem={removeItem} />}
+      <ProductPage
+        product={selectedProduct}
+        onBack={() => { setPage("home"); setSelectedProduct(null); window.scrollTo({ top: 0 }); }}
+        onAddToCart={addToCart}
+        onBuyNow={buyNow}
+      />
+    </>
+  );
+
+  // ── HOME PAGE ─────────────────────────────────────────
   return (
     <div style={{ backgroundColor: "#FAF9F7", color: "#1A1816", minHeight: "100vh" }}>
 
-      {/* ── Toast notification ── */}
+      {/* Toast */}
       {toast && (
         <div style={{ position: "fixed", bottom: "28px", left: "50%", transform: "translateX(-50%)", zIndex: 2000, backgroundColor: "#1A1816", color: "#FAF9F7", padding: "12px 28px", borderRadius: "2px", fontSize: "9px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", whiteSpace: "nowrap", boxShadow: "0 8px 36px rgba(26,24,22,0.28)", animation: "toastIn 0.3s cubic-bezier(0.22,1,0.36,1)", display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ color: "#B8966E" }}>✦</span> {toast}
         </div>
       )}
 
-      {/* ── WhatsApp button ── */}
-      {/* ⚠️ Replace 201XXXXXXXXX with your real WhatsApp number */}
-      <a href="https://wa.me/201XXXXXXXXX" target="_blank" rel="noreferrer"
+      {/* WhatsApp */}
+      <a href="https://wa.me/201010886611" target="_blank" rel="noreferrer"
         style={{ position: "fixed", bottom: "28px", right: "22px", zIndex: 1500, width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(37,211,102,0.4)", transition: "transform 0.2s" }}
         onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
         onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       </a>
 
-      {/* ── Search overlay ── */}
+      {/* Mobile floating cart button */}
+      <button className="m-burger" onClick={() => setCartOpen(true)}
+        style={{ position: "fixed", bottom: "88px", right: "22px", zIndex: 1499, width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "#1A1816", color: "#FAF9F7", border: "none", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(26,24,22,0.35)", cursor: "pointer", transition: "transform 0.2s" }}>
+        <ShoppingBag size={18} strokeWidth={1.6} />
+        {totalQty > 0 && <span style={{ position: "absolute", top: "-2px", right: "-2px", backgroundColor: "#B8966E", color: "#fff", fontSize: "8px", fontWeight: 700, width: "18px", height: "18px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{totalQty}</span>}
+      </button>
+
+      {/* Search overlay */}
       {searchOpen && (
         <>
           <div onClick={closeSearch} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(26,24,22,0.55)", zIndex: 1100, backdropFilter: "blur(8px)", animation: "fadeIn 0.2s ease" }} />
@@ -116,7 +152,7 @@ export default function App() {
                   {filteredProducts.length === 0
                     ? <p style={{ fontSize: "13px", color: "#9A9590", padding: "12px 0", fontWeight: 300 }}>No pieces found.</p>
                     : filteredProducts.map(p => (
-                        <button key={p.id} onClick={() => { closeSearch(); setPopup(p); }}
+                        <button key={p._id || p.id} onClick={() => { closeSearch(); setSelectedProduct(p); setPage("product"); }}
                           style={{ display: "flex", alignItems: "center", gap: "16px", padding: "12px", borderRadius: "3px", border: "none", background: "none", cursor: "pointer", textAlign: "left", transition: "background 0.15s", fontFamily: "inherit" }}
                           onMouseEnter={e => e.currentTarget.style.background = "#EDEAE4"}
                           onMouseLeave={e => e.currentTarget.style.background = "none"}>
@@ -127,7 +163,7 @@ export default function App() {
                             <p className="serif" style={{ fontSize: "16px", fontWeight: 400, color: "#1A1816", marginBottom: "2px" }}>{p.name}</p>
                             <p style={{ fontSize: "8px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#9A9590" }}>{p.description}</p>
                           </div>
-                          <p style={{ fontSize: "12px", fontWeight: 600, color: "#1A1816", flexShrink: 0 }}>{p.price.toLocaleString()} EGP</p>
+                          <p style={{ fontSize: "12px", fontWeight: 600, color: "#1A1816", flexShrink: 0 }}>{p.price?.toLocaleString()} EGP</p>
                         </button>
                       ))}
                 </div>
@@ -137,13 +173,8 @@ export default function App() {
         </>
       )}
 
-      {/* ── Modals ── */}
-      {popup    && <ProductPopup product={popup} onClose={() => setPopup(null)} onAddToCart={addToCart} />}
+      {/* Cart drawer */}
       {cartOpen && <CartDrawer cart={cart} onClose={() => setCartOpen(false)} onCheckout={() => setPage("checkout")} onRemoveItem={removeItem} />}
-
-      {/* ══════════════════════════════════════════
-          HOME PAGE — Navbar + Hero + Collection + Footer
-         ══════════════════════════════════════════ */}
 
       {/* ── Navbar ── */}
       <nav style={{ position: "sticky", top: 0, zIndex: 1000, backgroundColor: "rgba(250,249,247,0.95)", borderBottom: "1px solid #EDE9E3", padding: "13px clamp(14px,4vw,52px)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}>
@@ -246,16 +277,23 @@ export default function App() {
           </FadeIn>
           <div className="pgrid" style={{ display: "grid", gap: "44px 28px" }}>
             {productsLoading
-              ? <p style={{ gridColumn:"1/-1", textAlign:"center", padding:"60px 0", color:"#9A9590", letterSpacing:"0.2em", fontSize:"11px", textTransform:"uppercase" }}>Loading collection…</p>
-              : filteredProducts.length === 0
-              ? <p style={{ gridColumn:"1/-1", textAlign:"center", padding:"60px 0", color:"#9A9590", letterSpacing:"0.2em", fontSize:"11px", textTransform:"uppercase" }}>No pieces available</p>
-              : filteredProducts.map((p, i) => <ProductCard key={p._id || p.id} product={p} index={i} onOpenPopup={setPopup} />)
+              ? <p style={{ gridColumn: "1/-1", textAlign: "center", padding: "80px 0", color: "#9A9590", letterSpacing: "0.2em", fontSize: "11px", textTransform: "uppercase" }}>Loading collection…</p>
+              : products.length === 0
+              ? <p style={{ gridColumn: "1/-1", textAlign: "center", padding: "80px 0", color: "#9A9590", letterSpacing: "0.2em", fontSize: "11px", textTransform: "uppercase" }}>No pieces available at this time.</p>
+              : filteredProducts.map((p, i) => (
+                  <ProductCard
+                    key={p._id || p.id}
+                    product={p}
+                    index={i}
+                    onOpenPopup={(product) => { setSelectedProduct(product); setPage("product"); window.scrollTo({ top: 0 }); }}
+                  />
+                ))
             }
           </div>
         </div>
       </section>
 
-      {/* ── Quote section ── */}
+      {/* ── Quote ── */}
       <section style={{ backgroundColor: "#1A1816", padding: "clamp(80px,11vw,120px) clamp(18px,5vw,52px)", display: "flex", justifyContent: "center" }}>
         <div style={{ maxWidth: "580px", textAlign: "center", animation: "fadeUp 0.7s ease both" }}>
           <div style={{ width: "1px", height: "52px", backgroundColor: "#B8966E", margin: "0 auto 30px" }} />
