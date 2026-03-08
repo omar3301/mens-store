@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { ShoppingBag, Menu, X, ArrowRight, Instagram, ChevronDown, Search, Check } from "lucide-react";
 
-import { PRODUCTS, firstImg } from "./data/products";
+import { fetchProducts, firstImg } from "./data/products";
 import ProductCard    from "./components/ProductCard";
 import ProductPopup   from "./components/ProductPopup";
 import CartDrawer     from "./components/CartDrawer";
@@ -39,16 +39,25 @@ export default function App() {
   }, [cart]);
 
   // ── Toast ────────────────────────────────────────────
+  // ── Products — fetched from backend ─────────────────
+  const [products, setProducts]       = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  useEffect(() => {
+    fetchProducts()
+      .then(data => { setProducts(data); setProductsLoading(false); })
+      .catch(() => setProductsLoading(false));
+  }, []);
+
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2400); };
 
   // ── Search ───────────────────────────────────────────
   const filteredProducts = searchQuery.trim()
-    ? PRODUCTS.filter(p =>
+    ? products.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase()))
       )
-    : PRODUCTS;
+    : products;
 
   const openSearch  = () => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 80); };
   const closeSearch = () => { setSearchOpen(false); setSearchQuery(""); };
@@ -81,7 +90,7 @@ export default function App() {
 
       {/* ── WhatsApp button ── */}
       {/* ⚠️ Replace 201XXXXXXXXX with your real WhatsApp number */}
-      <a href="https://wa.me/201010886611" target="_blank" rel="noreferrer"
+      <a href="https://wa.me/201XXXXXXXXX" target="_blank" rel="noreferrer"
         style={{ position: "fixed", bottom: "28px", right: "22px", zIndex: 1500, width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(37,211,102,0.4)", transition: "transform 0.2s" }}
         onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
         onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
@@ -225,7 +234,7 @@ export default function App() {
           <FadeIn>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "52px", flexWrap: "wrap", gap: "14px" }}>
               <div>
-                <p style={{ fontSize: "7px", letterSpacing: "0.36em", textTransform: "uppercase", color: "#9A9590", fontWeight: 600, marginBottom: "11px" }}>Spring / Summer 2026 — {PRODUCTS.length} singular pieces</p>
+                <p style={{ fontSize: "7px", letterSpacing: "0.36em", textTransform: "uppercase", color: "#9A9590", fontWeight: 600, marginBottom: "11px" }}>Spring / Summer 2026 — {products.length} singular pieces</p>
                 <h2 className="serif" style={{ fontSize: "clamp(30px,5.5vw,52px)", fontWeight: 300, letterSpacing: "-0.01em", lineHeight: 1.05 }}>The Collection</h2>
               </div>
               <a href="#" style={{ fontSize: "7px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "7px", color: "#7A7570", borderBottom: "1px solid #C5BFB8", paddingBottom: "2px", whiteSpace: "nowrap", transition: "color 0.2s,border-color 0.2s" }}
@@ -236,7 +245,12 @@ export default function App() {
             </div>
           </FadeIn>
           <div className="pgrid" style={{ display: "grid", gap: "44px 28px" }}>
-            {filteredProducts.map((p, i) => <ProductCard key={p.id} product={p} index={i} onOpenPopup={setPopup} />)}
+            {productsLoading
+              ? <p style={{ gridColumn:"1/-1", textAlign:"center", padding:"60px 0", color:"#9A9590", letterSpacing:"0.2em", fontSize:"11px", textTransform:"uppercase" }}>Loading collection…</p>
+              : filteredProducts.length === 0
+              ? <p style={{ gridColumn:"1/-1", textAlign:"center", padding:"60px 0", color:"#9A9590", letterSpacing:"0.2em", fontSize:"11px", textTransform:"uppercase" }}>No pieces available</p>
+              : filteredProducts.map((p, i) => <ProductCard key={p._id || p.id} product={p} index={i} onOpenPopup={setPopup} />)
+            }
           </div>
         </div>
       </section>
