@@ -76,7 +76,7 @@ export default function CheckoutPage({ cart, onBack, onPlaceOrder, onRemoveItem 
         body: JSON.stringify({
           customer: saved,
           items: cart.map(item => ({
-            productId: item.id, name: item.name,
+            productId: item._id || item.id, name: item.name,
             description: item.description, badge: item.badge,
             price: item.price, image: item.images?.[0] || "",
           })),

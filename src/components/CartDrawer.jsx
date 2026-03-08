@@ -63,7 +63,7 @@ const CartDrawer = memo(function CartDrawer({ cart, onClose, onCheckout, onRemov
               <p style={{ fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase" }}>Your selection is empty</p>
             </div>
           ) : cart.map(item => {
-            const key = `${item.id}-${item.size}-${item.color}`;
+            const key = `${item._id || item.id}`;
             return (
               <div key={key} style={{ display: "flex", gap: "14px", alignItems: "flex-start", padding: "18px 0", borderBottom: "1px solid #EDE9E3" }}>
                 <div style={{ width: "56px", height: "70px", backgroundColor: "#EDEAE4", borderRadius: "2px", flexShrink: 0, overflow: "hidden" }}>
