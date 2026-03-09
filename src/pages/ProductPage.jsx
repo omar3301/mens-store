@@ -134,7 +134,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow }) {
       <div className="pp-desk" style={{ display: "grid", gridTemplateColumns: "1fr 400px", maxWidth: "1400px", margin: "0 auto", minHeight: "calc(100vh - 58px)" }}>
 
         {/* Left: thumbnails + main image */}
-        <div style={{ display: "flex", gap: "14px", padding: "32px 28px 32px 48px", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", gap: "14px", padding: "32px 28px 32px 48px", alignItems: "stretch" }}>
 
           {/* Thumbnail column */}
           {total > 1 && (
@@ -150,7 +150,7 @@ export default function ProductPage({ product, onAddToCart, onBuyNow }) {
           {/* Main image */}
           <div ref={deskDivRef}
             onMouseMove={onDeskMove} onMouseDown={onDeskDown} onMouseUp={onDeskUp} onMouseLeave={onDeskUp}
-            style={{ flex: 1, position: "relative", backgroundColor: "#EDEBE7", borderRadius: "4px", overflow: "hidden", aspectRatio: "2/3", cursor: deskZoom ? "zoom-in" : "default", userSelect: "none" }}>
+            style={{ flex: 1, position: "relative", backgroundColor: "#EDEBE7", borderRadius: "4px", overflow: "hidden", cursor: deskZoom ? "zoom-in" : "default", userSelect: "none", minHeight: "500px" }}>
             {imgs.length > 0
               ? <img ref={deskImgRef} src={imgs[imgIdx]} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.3s", transform: "scale(1)", pointerEvents: "none" }} />
               : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "64px" }}>🧥</div>}
