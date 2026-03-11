@@ -1,265 +1,295 @@
-import { useState } from "react";
-import { ArrowLeft, Check, Trash2 } from "lucide-react";
-import { firstImg, EGYPT_GOVS, getShipping, FREE_SHIPPING_THRESHOLD, getEffectivePrice } from "../data/products";
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronDown, Trash2, Package, Loader } from "lucide-react";
+import { EGYPT_GOVS, FREE_SHIPPING_THRESHOLD, getShipping, firstImg } from "../data/products";
 
-const API = "https://back-end-production-afdf.up.railway.app";
+const API_URL = import.meta.env.VITE_API_URL || "https://back-end-production-afdf.up.railway.app";
 
-const Field = ({ label, children, error }) => (
-  <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
-    <label style={{ fontSize:"8px", fontWeight:700, letterSpacing:"0.22em", textTransform:"uppercase", color: error?"#C0392B":"#1A1816" }}>
-      {label}{error && <span style={{ marginLeft:"6px", color:"#C0392B", fontWeight:500, textTransform:"none", letterSpacing:0 }}> — {error}</span>}
-    </label>
-    {children}
-  </div>
-);
+// ─── Reusable Input (CONTROLLED — no memo, no refs) ───
+// The original used memo() + uncontrolled refs. When the `errors` state
+// changed, memo's shallow-compare caused a re-render that lost focus.
+// Fix: fully controlled <input> with value/onChange, no memo wrapper.
+function UInput({ label, name, type = "text", error, value, onChange, placeholder }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+      <label style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: error ? "#c0392b" : "#888" }}>
+        {label}{error ? <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}> — {error}</span> : ""}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete={name === "email" ? "email" : name === "phone" ? "tel" : name === "firstName" ? "given-name" : name === "lastName" ? "family-name" : name === "address" ? "street-address" : name === "city" ? "address-level2" : "off"}
+        style={{ padding: "13px 14px", border: error ? "1px solid #c0392b" : "1px solid #DDD8D2", borderRadius: "3px", fontSize: "13px", outline: "none", backgroundColor: "#fff", transition: "border-color 0.2s", width: "100%", fontFamily: "inherit", boxSizing: "border-box" }}
+        onFocus={e => e.target.style.borderColor = "#1A1816"}
+        onBlur={e => e.target.style.borderColor = error ? "#c0392b" : "#DDD8D2"}
+      />
+    </div>
+  );
+}
 
-const inp = (hasError=false) => ({
-  padding:"12px 14px", border:`1px solid ${hasError?"#C0392B":"#DDD8D2"}`,
-  borderRadius:"3px", fontSize:"13px", fontFamily:"inherit",
-  color:"#1A1816", backgroundColor:"#fff", outline:"none",
-  transition:"border-color 0.15s", width:"100%", boxSizing:"border-box",
-  // Supports Arabic text direction automatically
-  direction:"auto", unicodeBidi:"plaintext",
-});
-
+// ─── CheckoutPage ─────────────────────────────────────
 export default function CheckoutPage({ cart, onBack, onPlaceOrder, onRemoveItem }) {
-  const [form, setForm] = useState({
-    firstName:"", lastName:"", email:"", phone:"",
-    address:"", apartment:"", city:"", governorate:"",
-  });
-  const [errors, setErrors]   = useState({});
-  const [loading, setLoading] = useState(false);
-  const [serverErr, setServerErr] = useState("");
+  const [step, setStep]             = useState(1);
+  const [errors, setErrors]         = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError]     = useState("");
 
-  // Calculate using live backend shipping
-  const subtotal    = cart.reduce((s, i) => s + getEffectivePrice(i) * (i.qty||1), 0);
-  const rawSubtotal = cart.reduce((s, i) => s + i.price * (i.qty||1), 0);
-  const discountAmt = rawSubtotal - subtotal;  // total savings
+  // Controlled form state — each field is its own string
+  const [fields, setFields] = useState({
+    email: "", firstName: "", lastName: "",
+    address: "", apartment: "", city: "", phone: "",
+  });
+  const [govVal, setGovVal] = useState("");
+
+  // Helper to update a single field and clear its error
+  const setField = (name, value) => {
+    setFields(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: undefined }));
+  };
+
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
+
+  const subtotal    = cart.reduce((s, i) => s + i.price * (i.qty || 1), 0);
   const shipping    = getShipping(subtotal);
   const total       = subtotal + shipping;
   const freeShip    = shipping === 0;
+  const progressPct = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
-  const set = (field) => (e) => {
-    setForm(prev => ({ ...prev, [field]: e.target.value }));
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: "" }));
-  };
-
-  const validate = () => {
+  const validate1 = () => {
     const e = {};
-    if (!form.firstName.trim()) e.firstName   = "Required";
-    if (!form.lastName.trim())  e.lastName    = "Required";
-    if (!form.phone.trim())     e.phone       = "Required";
-    if (!form.address.trim())   e.address     = "Required";
-    if (!form.city.trim())      e.city        = "Required";
-    if (!form.governorate)      e.governorate = "Required";
-    if (form.email && !/\S+@\S+\.\S+/.test(form.email)) e.email = "Invalid email";
-    return e;
+    if (!fields.firstName.trim())                              e.firstName   = "Required";
+    if (!fields.lastName.trim())                               e.lastName    = "Required";
+    if (!fields.email.trim() || !fields.email.includes("@"))   e.email       = "Valid email required";
+    if (!fields.phone.trim())                                  e.phone       = "Required";
+    if (!fields.address.trim())                                e.address     = "Required";
+    if (!fields.city.trim())                                   e.city        = "Required";
+    if (!govVal)                                               e.governorate = "Required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async () => {
-    const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
-    setLoading(true); setServerErr("");
+  const handleContinue = () => {
+    if (validate1()) setStep(2);
+  };
+
+  // ── Call backend API ─────────────────────────────────
+  const handlePlaceOrder = async () => {
+    setSubmitting(true);
+    setApiError("");
     try {
-      const res = await fetch(`${API}/api/orders`, {
+      const res = await fetch(`${API_URL}/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customer: form,
-          items: cart.map(i => ({
-            productId:  i._id || i.id,
-            name:       i.name,
-            description:i.description,
-            badge:      i.badge || i.category,
-            price:      i.price,          // original price
-            salePrice:  getEffectivePrice(i) < i.price ? getEffectivePrice(i) : undefined,
-            size:       i.size,
-            color:      i.colorName,
-            image:      firstImg(i),
+          customer: {
+            firstName: fields.firstName, lastName: fields.lastName,
+            email: fields.email, phone: fields.phone,
+            address: fields.address, apartment: fields.apartment,
+            city: fields.city, governorate: govVal,
+          },
+          items: cart.map(item => ({
+            productId: item._id || item.id, name: item.name,
+            description: item.description, badge: item.badge,
+            price: item.price, image: item.images?.[0] || "",
+            size: item.size || "", color: item.color || "",
           })),
-          subtotal,
-          discount: discountAmt,
-          shipping,
-          total,
+          subtotal, shipping, total,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Order failed");
+      if (!res.ok) { setApiError(data.error || "Something went wrong."); setSubmitting(false); return; }
       onPlaceOrder(data.orderNumber);
-    } catch (err) {
-      setServerErr(err.message || "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+    } catch {
+      setApiError("Cannot reach the server. Please check your connection.");
+      setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ backgroundColor:"#FAF9F7", minHeight:"100vh", fontFamily:"inherit" }}>
-      {/* Back bar */}
-      <div style={{ padding:"16px clamp(16px,4vw,52px)", borderBottom:"1px solid #EDE9E3", position:"sticky", top:0, zIndex:100, backgroundColor:"rgba(250,249,247,.97)", backdropFilter:"blur(12px)" }}>
-        <div style={{ maxWidth:"1100px", margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <button onClick={onBack}
-            style={{ display:"flex", alignItems:"center", gap:"8px", background:"none", border:"none", cursor:"pointer", color:"#7A7570", fontSize:"8px", fontWeight:700, letterSpacing:"0.22em", textTransform:"uppercase", fontFamily:"inherit", transition:"color 0.2s" }}
-            onMouseEnter={e=>e.currentTarget.style.color="#1A1816"} onMouseLeave={e=>e.currentTarget.style.color="#7A7570"}>
-            <ArrowLeft size={13} strokeWidth={1.8}/> Continue Shopping
-          </button>
-          <span className="serif" style={{ fontSize:"18px", fontWeight:300, letterSpacing:"0.12em" }}>Checkout</span>
-          <div style={{ width:"120px" }}/>
+    <div style={{ minHeight: "100vh", backgroundColor: "#FAF9F7", fontFamily: "'Montserrat',sans-serif", animation: "pageIn 0.4s ease" }}>
+
+      {/* Header */}
+      <div style={{ backgroundColor: "#FAF9F7", borderBottom: "1px solid #EDE9E3", padding: "16px clamp(14px,4vw,48px)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: "6px", fontSize: "9px", fontWeight: 600, color: "#9A9590", fontFamily: "inherit", cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+          <ChevronLeft size={13} strokeWidth={1.8} /> Back
+        </button>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.28em", textTransform: "uppercase" }}>SOLA</div>
+          <div style={{ fontSize: "6px", fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase", color: "#9A9590" }}>Brand & Boutique</div>
         </div>
+        <div style={{ width: "70px" }} />
       </div>
 
-      <div style={{ maxWidth:"1100px", margin:"0 auto", padding:"clamp(22px,4vw,48px) clamp(16px,4vw,52px)" }}>
-        <div className="co-layout" style={{ display:"grid", gridTemplateColumns:"1fr 380px", gap:"clamp(22px,4vw,56px)", alignItems:"start" }}>
-
-          {/* LEFT — Form */}
-          <div>
-            <h2 style={{ fontSize:"9px", fontWeight:700, letterSpacing:"0.3em", textTransform:"uppercase", marginBottom:"26px" }}>Delivery Information</h2>
-            <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
-                <Field label="First Name" error={errors.firstName}>
-                  <input value={form.firstName} onChange={set("firstName")} placeholder="Ahmed" style={inp(!!errors.firstName)}
-                    onFocus={e=>e.target.style.borderColor="#1A1816"} onBlur={e=>e.target.style.borderColor=errors.firstName?"#C0392B":"#DDD8D2"}/>
-                </Field>
-                <Field label="Last Name" error={errors.lastName}>
-                  <input value={form.lastName} onChange={set("lastName")} placeholder="Hassan" style={inp(!!errors.lastName)}
-                    onFocus={e=>e.target.style.borderColor="#1A1816"} onBlur={e=>e.target.style.borderColor=errors.lastName?"#C0392B":"#DDD8D2"}/>
-                </Field>
-              </div>
-
-              <Field label="Phone Number" error={errors.phone}>
-                <input value={form.phone} onChange={set("phone")} placeholder="+20 100 000 0000" type="tel" style={inp(!!errors.phone)}
-                  onFocus={e=>e.target.style.borderColor="#1A1816"} onBlur={e=>e.target.style.borderColor=errors.phone?"#C0392B":"#DDD8D2"}/>
-              </Field>
-
-              <Field label="Email Address (optional)">
-                <input value={form.email} onChange={set("email")} placeholder="ahmed@email.com" type="email" style={inp(!!errors.email)}
-                  onFocus={e=>e.target.style.borderColor="#1A1816"} onBlur={e=>e.target.style.borderColor=errors.email?"#C0392B":"#DDD8D2"}/>
-              </Field>
-
-              {/* Street — Arabic + English supported */}
-              <Field label="Street Address / العنوان" error={errors.address}>
-                <input value={form.address} onChange={set("address")}
-                  placeholder="123 El Tahrir St / شارع التحرير ١٢٣"
-                  style={{ ...inp(!!errors.address), direction:"auto" }}
-                  onFocus={e=>e.target.style.borderColor="#1A1816"} onBlur={e=>e.target.style.borderColor=errors.address?"#C0392B":"#DDD8D2"}/>
-              </Field>
-
-              <Field label="Apartment / Floor / الشقة (optional)">
-                <input value={form.apartment} onChange={set("apartment")}
-                  placeholder="Apt 5, Floor 2 / شقة ٥، الدور ٢"
-                  style={{ ...inp(), direction:"auto" }}
-                  onFocus={e=>e.target.style.borderColor="#1A1816"} onBlur={e=>e.target.style.borderColor="#DDD8D2"}/>
-              </Field>
-
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
-                <Field label="City / المدينة" error={errors.city}>
-                  <input value={form.city} onChange={set("city")}
-                    placeholder="Cairo / القاهرة"
-                    style={{ ...inp(!!errors.city), direction:"auto" }}
-                    onFocus={e=>e.target.style.borderColor="#1A1816"} onBlur={e=>e.target.style.borderColor=errors.city?"#C0392B":"#DDD8D2"}/>
-                </Field>
-                <Field label="Governorate / المحافظة" error={errors.governorate}>
-                  <select value={form.governorate} onChange={set("governorate")}
-                    style={{ ...inp(!!errors.governorate), appearance:"none", backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239A9590' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")", backgroundRepeat:"no-repeat", backgroundPosition:"right 14px center", paddingRight:"38px" }}
-                    onFocus={e=>e.target.style.borderColor="#1A1816"} onBlur={e=>e.target.style.borderColor=errors.governorate?"#C0392B":"#DDD8D2"}>
-                    <option value="">Select…</option>
-                    {EGYPT_GOVS.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </Field>
-              </div>
+      {/* Steps */}
+      <div style={{ display: "flex", justifyContent: "center", padding: "26px 16px 0" }}>
+        {[{ n: 1, label: "Delivery" }, { n: 2, label: "Review" }, { n: 3, label: "Done" }].map((s, i) => (
+          <div key={s.n} style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+              <div style={{ width: "26px", height: "26px", borderRadius: "50%", backgroundColor: step >= s.n ? "#1A1816" : "#E5E0D8", color: step >= s.n ? "#FAF9F7" : "#AAA4A0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: 700, transition: "background 0.4s" }}>{step > s.n ? "✓" : s.n}</div>
+              <span style={{ fontSize: "7px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: step >= s.n ? "#1A1816" : "#C5C0B8", transition: "color 0.4s" }}>{s.label}</span>
             </div>
-
-            {/* Payment badge */}
-            <div style={{ marginTop:"28px", padding:"16px 18px", backgroundColor:"#F0FAF4", border:"1px solid #C3E6D0", borderRadius:"4px", display:"flex", alignItems:"center", gap:"12px" }}>
-              <span style={{ fontSize:"20px" }}>💵</span>
-              <div>
-                <p style={{ fontSize:"9px", fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase", color:"#2C5F3F", marginBottom:"3px" }}>Cash on Delivery</p>
-                <p style={{ fontSize:"11px", color:"#3A7A56", fontWeight:300 }}>Pay when your order arrives. No prepayment needed.</p>
-              </div>
-            </div>
-
-            {serverErr && (
-              <div style={{ marginTop:"14px", padding:"12px 16px", backgroundColor:"#FEF2F2", border:"1px solid #FECACA", borderRadius:"4px" }}>
-                <p style={{ fontSize:"11px", color:"#C0392B" }}>{serverErr}</p>
-              </div>
-            )}
-
-            <button onClick={handleSubmit} disabled={loading||cart.length===0}
-              style={{ marginTop:"26px", width:"100%", padding:"17px", backgroundColor: loading?"#7A7570":"#1A1816", color:"#FAF9F7", border:"none", cursor: loading?"not-allowed":"pointer", borderRadius:"3px", fontSize:"9px", fontWeight:700, letterSpacing:"0.26em", textTransform:"uppercase", fontFamily:"inherit", transition:"background 0.2s", display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}
-              onMouseEnter={e=>{ if(!loading)e.currentTarget.style.backgroundColor="#2D2A26"; }}
-              onMouseLeave={e=>{ if(!loading)e.currentTarget.style.backgroundColor="#1A1816"; }}>
-              {loading ? (
-                <><span style={{ display:"inline-block", width:"12px", height:"12px", border:"2px solid rgba(250,249,247,.3)", borderTopColor:"#FAF9F7", borderRadius:"50%", animation:"spin .8s linear infinite" }} /> Placing Order…</>
-              ) : (
-                <><Check size={13} strokeWidth={2.5}/> Place Order — {total.toLocaleString()} EGP</>
-              )}
-            </button>
+            {i < 2 && <div style={{ width: "clamp(32px,8vw,70px)", height: "1px", backgroundColor: step > s.n ? "#1A1816" : "#E5E0D8", margin: "0 8px 20px", transition: "background 0.4s" }} />}
           </div>
+        ))}
+      </div>
 
-          {/* RIGHT — Summary */}
-          <div style={{ position:"sticky", top:"80px" }}>
-            <h2 style={{ fontSize:"9px", fontWeight:700, letterSpacing:"0.3em", textTransform:"uppercase", marginBottom:"18px" }}>Order Summary</h2>
-            <div style={{ backgroundColor:"#fff", border:"1px solid #EDE9E3", borderRadius:"4px", overflow:"hidden", marginBottom:"14px" }}>
-              {cart.map((item, idx) => {
-                const key = `${item._id||item.id}-${item.size}-${item.colorName}`;
-                const sp  = getEffectivePrice(item);
-                const hasD= sp < item.price;
-                return (
-                  <div key={key} style={{ display:"flex", gap:"12px", padding:"13px 16px", borderBottom: idx<cart.length-1?"1px solid #F5F2ED":"none" }}>
-                    <div style={{ width:"52px", height:"64px", backgroundColor:"#EDEAE4", borderRadius:"2px", flexShrink:0, overflow:"hidden" }}>
-                      {firstImg(item) && <img src={firstImg(item)} alt={item.name} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>}
+      <div className="co-layout" style={{ maxWidth: "960px", margin: "0 auto", padding: "26px clamp(14px,4vw,24px) 80px", display: "grid", gap: "20px" }}>
+
+        {/* Form card */}
+        <div style={{ backgroundColor: "#fff", borderRadius: "4px", padding: "clamp(20px,4vw,32px)", boxShadow: "0 2px 20px rgba(26,24,22,0.06)", border: "1px solid #EDE9E3" }}>
+
+          {step === 1 && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: "20px" }}>Contact</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "30px" }}>
+                <UInput label="Email (Optional)" name="email" placeholder="your@email.com" type="email" error={errors.email}
+                  value={fields.email} onChange={e => setField("email", e.target.value)} />
+              </div>
+              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: "20px" }}>Delivery Address</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div style={{ padding: "12px 14px", border: "1px solid #EDE9E3", borderRadius: "3px", backgroundColor: "#F5F2ED" }}>
+                  <p style={{ fontSize: "8px", color: "#9A9590", marginBottom: "2px", letterSpacing: "0.12em", textTransform: "uppercase" }}>Country</p>
+                  <p style={{ fontSize: "13px", fontWeight: 500 }}>Egypt</p>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                  <UInput label="First Name" name="firstName" placeholder="First name" error={errors.firstName}
+                    value={fields.firstName} onChange={e => setField("firstName", e.target.value)} />
+                  <UInput label="Last Name" name="lastName" placeholder="Last name" error={errors.lastName}
+                    value={fields.lastName} onChange={e => setField("lastName", e.target.value)} />
+                </div>
+                <UInput label="Phone" name="phone" placeholder="+20 100 000 0000" type="tel" error={errors.phone}
+                  value={fields.phone} onChange={e => setField("phone", e.target.value)} />
+                <UInput label="Street Address / العنوان" name="address" placeholder="123 El Tahrir St" error={errors.address}
+                  value={fields.address} onChange={e => setField("address", e.target.value)} />
+                <UInput label="Apartment / الشقة (Optional)" name="apartment" placeholder="Apt 5, Floor 2"
+                  value={fields.apartment} onChange={e => setField("apartment", e.target.value)} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                  <UInput label="City / المدينة" name="city" placeholder="Cairo" error={errors.city}
+                    value={fields.city} onChange={e => setField("city", e.target.value)} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                    <label style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: errors.governorate ? "#c0392b" : "#888" }}>
+                      Governorate{errors.governorate ? <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}> — {errors.governorate}</span> : ""}
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <select value={govVal} onChange={e => { setGovVal(e.target.value); setErrors(p => ({ ...p, governorate: undefined })); }}
+                        style={{ width: "100%", padding: "13px 34px 13px 14px", border: errors.governorate ? "1px solid #c0392b" : "1px solid #DDD8D2", borderRadius: "3px", fontSize: "13px", fontFamily: "inherit", outline: "none", backgroundColor: "#fff", WebkitAppearance: "none", appearance: "none", cursor: "pointer" }}
+                        onFocus={e => e.target.style.borderColor = "#1A1816"} onBlur={e => e.target.style.borderColor = errors.governorate ? "#c0392b" : "#DDD8D2"}>
+                        <option value="">Select...</option>
+                        {EGYPT_GOVS.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                      <ChevronDown size={12} strokeWidth={1.8} style={{ position: "absolute", right: "11px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#888" }} />
                     </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <p className="serif" style={{ fontSize:"15px", fontWeight:400, lineHeight:1.2, marginBottom:"3px" }}>{item.name}</p>
-                      <div style={{ display:"flex", gap:"8px", marginBottom:"5px" }}>
-                        {item.size && item.size!=="One Size" && <span style={{ fontSize:"8px", color:"#7A7570", backgroundColor:"#F0EDE8", padding:"1px 6px", borderRadius:"2px" }}>{item.size}</span>}
-                        {item.colorName && <span style={{ fontSize:"8px", color:"#7A7570" }}>{item.colorName}</span>}
-                      </div>
-                      <div style={{ display:"flex", alignItems:"baseline", gap:"5px" }}>
-                        <p style={{ fontSize:"12px", fontWeight:600, color: hasD?"#C0392B":"#1A1816" }}>{sp.toLocaleString()} EGP</p>
-                        {hasD && <p style={{ fontSize:"10px", color:"#B8A898", textDecoration:"line-through" }}>{item.price.toLocaleString()}</p>}
-                      </div>
-                    </div>
-                    <button onClick={()=>onRemoveItem(key)} style={{ background:"none", border:"none", cursor:"pointer", color:"#C5BFB8", flexShrink:0, display:"flex", alignSelf:"flex-start", marginTop:"2px" }}
-                      onMouseEnter={e=>e.currentTarget.style.color="#9A9590"} onMouseLeave={e=>e.currentTarget.style.color="#C5BFB8"}>
-                      <Trash2 size={12} strokeWidth={1.8}/>
+                  </div>
+                </div>
+              </div>
+              <div style={{ marginTop: "24px", padding: "16px", backgroundColor: "#F5F2ED", borderRadius: "3px", border: "1px solid #E8E3DB", display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                <div style={{ fontSize: "20px", lineHeight: 1 }}>💵</div>
+                <div>
+                  <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "4px", color: "#2C5F3F" }}>Cash on Delivery</p>
+                  <p style={{ fontSize: "11px", color: "#7A7570", lineHeight: 1.75, fontWeight: 300 }}>Pay when your order arrives. No prepayment needed.</p>
+                </div>
+              </div>
+              <button onClick={handleContinue}
+                style={{ marginTop: "22px", width: "100%", padding: "15px", backgroundColor: "#1A1816", color: "#FAF9F7", border: "none", fontSize: "8px", fontWeight: 700, letterSpacing: "0.28em", textTransform: "uppercase", fontFamily: "inherit", borderRadius: "3px", cursor: "pointer", transition: "all 0.25s" }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#2D2A26"; e.currentTarget.style.letterSpacing = "0.32em"; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#1A1816"; e.currentTarget.style.letterSpacing = "0.28em"; }}>
+                Continue to Review →
+              </button>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div style={{ animation: "pageIn 0.3s ease" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "24px" }}>
+                <Package size={14} strokeWidth={1.6} />
+                <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>Confirm Your Order</p>
+              </div>
+              <div style={{ backgroundColor: "#F5F2ED", borderRadius: "3px", padding: "16px", marginBottom: "12px", border: "1px solid #E8E3DB" }}>
+                <p style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9A9590", marginBottom: "8px" }}>Delivering To</p>
+                <p style={{ fontSize: "13px", fontWeight: 500, marginBottom: "3px" }}>{fields.firstName} {fields.lastName}</p>
+                <p style={{ fontSize: "12px", color: "#5A5550", fontWeight: 300 }}>{fields.address}{fields.apartment ? `, ${fields.apartment}` : ""}</p>
+                <p style={{ fontSize: "12px", color: "#5A5550", fontWeight: 300 }}>{fields.city}, {govVal} — Egypt</p>
+                {fields.email && <p style={{ fontSize: "11px", color: "#9A9590", marginTop: "6px" }}>{fields.email} · {fields.phone}</p>}
+                {!fields.email && <p style={{ fontSize: "11px", color: "#9A9590", marginTop: "6px" }}>{fields.phone}</p>}
+              </div>
+              <div style={{ backgroundColor: "#F5F2ED", borderRadius: "3px", padding: "16px", marginBottom: "24px", border: "1px solid #E8E3DB" }}>
+                <p style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9A9590", marginBottom: "6px" }}>Payment</p>
+                <p style={{ fontSize: "12px" }}>Cash on Delivery</p>
+              </div>
+
+              {apiError && (
+                <div style={{ padding: "13px 16px", backgroundColor: "#FFF0F0", border: "1px solid #FFCCCC", borderRadius: "3px", marginBottom: "16px" }}>
+                  <p style={{ fontSize: "12px", color: "#c0392b", fontWeight: 500 }}>⚠️ {apiError}</p>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button onClick={() => setStep(1)} disabled={submitting}
+                  style={{ flex: 1, padding: "14px", backgroundColor: "transparent", color: "#7A7570", border: "1px solid #DDD8D2", fontSize: "8px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", fontFamily: "inherit", borderRadius: "3px", cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.5 : 1 }}>
+                  ← Back
+                </button>
+                <button onClick={handlePlaceOrder} disabled={submitting}
+                  style={{ flex: 2, padding: "14px", backgroundColor: submitting ? "#4A7A62" : "#2C5F3F", color: "#FAF9F7", border: "none", fontSize: "8px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", fontFamily: "inherit", borderRadius: "3px", cursor: submitting ? "not-allowed" : "pointer", transition: "all 0.25s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                  onMouseEnter={e => { if (!submitting) e.currentTarget.style.backgroundColor = "#235a40"; }}
+                  onMouseLeave={e => { if (!submitting) e.currentTarget.style.backgroundColor = submitting ? "#4A7A62" : "#2C5F3F"; }}>
+                  {submitting
+                    ? <><Loader size={12} strokeWidth={2} style={{ animation: "spin 1s linear infinite" }} /> Placing Order…</>
+                    : "✓ Place Order — " + total.toLocaleString() + " EGP"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div>
+          <div style={{ backgroundColor: "#fff", borderRadius: "4px", padding: "clamp(16px,3vw,24px)", boxShadow: "0 2px 20px rgba(26,24,22,0.06)", position: "sticky", top: "18px", border: "1px solid #EDE9E3" }}>
+            <p style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: "16px", color: "#9A9590" }}>Order Summary</p>
+            <div style={{ marginBottom: "14px", padding: "12px", backgroundColor: "#F5F2ED", borderRadius: "3px" }}>
+              {freeShip
+                ? <p style={{ fontSize: "9px", fontWeight: 600, color: "#2C5F3F", letterSpacing: "0.1em" }}>✦ Complimentary delivery included</p>
+                : <>
+                    <p style={{ fontSize: "10px", color: "#7A7570", marginBottom: "8px" }}><strong style={{ color: "#1A1816" }}>{(FREE_SHIPPING_THRESHOLD - subtotal).toLocaleString()} EGP</strong> away from free delivery</p>
+                    <div style={{ height: "3px", backgroundColor: "#E0D8CE", borderRadius: "2px", overflow: "hidden" }}><div style={{ height: "100%", width: `${progressPct}%`, backgroundColor: "#B8966E", transition: "width 0.4s", borderRadius: "2px" }} /></div>
+                  </>}
+            </div>
+            {cart.map(item => {
+              const key = `${item.id}-${item.size}-${item.color}`;
+              return (
+                <div key={key} style={{ display: "flex", gap: "12px", padding: "14px 0", borderBottom: "1px solid #EDE9E3" }}>
+                  <div style={{ width: "50px", height: "62px", backgroundColor: "#EDEAE4", borderRadius: "2px", flexShrink: 0, overflow: "hidden" }}>
+                    {firstImg(item) && <img src={firstImg(item)} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p className="serif" style={{ fontSize: "15px", fontWeight: 400, marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</p>
+                    {item.size && <p style={{ fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9590", marginBottom: "2px" }}>Size: {item.size}</p>}
+                    {item.color && <p style={{ fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A9590", marginBottom: "6px" }}>Color: {item.color}</p>}
+                    <button onClick={() => onRemoveItem(key)}
+                      style={{ display: "flex", alignItems: "center", gap: "4px", background: "none", border: "none", cursor: "pointer", color: "#C5BFB8", fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "inherit", padding: 0, transition: "color 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.color = "#c0392b"} onMouseLeave={e => e.currentTarget.style.color = "#C5BFB8"}>
+                      <Trash2 size={9} strokeWidth={1.6} /> Remove
                     </button>
                   </div>
-                );
-              })}
-            </div>
-
-            <div style={{ backgroundColor:"#fff", border:"1px solid #EDE9E3", borderRadius:"4px", padding:"16px" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
-                <span style={{ fontSize:"10px", color:"#9A9590" }}>Subtotal</span>
-                <span style={{ fontSize:"10px", fontWeight:500 }}>{rawSubtotal.toLocaleString()} EGP</span>
-              </div>
-              {discountAmt > 0 && (
-                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
-                  <span style={{ fontSize:"10px", color:"#C0392B", fontWeight:600 }}>Discount</span>
-                  <span style={{ fontSize:"10px", fontWeight:600, color:"#C0392B" }}>-{discountAmt.toLocaleString()} EGP</span>
+                  <p style={{ fontSize: "11px", fontWeight: 500, flexShrink: 0 }}>{(item.price * (item.qty || 1)).toLocaleString()} EGP</p>
                 </div>
-              )}
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"14px" }}>
-                <span style={{ fontSize:"10px", color:"#9A9590" }}>Delivery</span>
-                <span style={{ fontSize:"10px", fontWeight:500, color: freeShip?"#2C5F3F":"#1A1816" }}>{freeShip?"Free":`${shipping} EGP`}</span>
+              );
+            })}
+            <div style={{ paddingTop: "14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "7px", fontSize: "10px", color: "#9A9590" }}><span>Subtotal</span><span>{subtotal.toLocaleString()} EGP</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px", fontSize: "10px", color: "#9A9590" }}>
+                <span>Delivery</span>
+                {freeShip ? <span style={{ color: "#2C5F3F", fontWeight: 600 }}>Complimentary</span> : <span>{shipping.toLocaleString()} EGP</span>}
               </div>
-              {!freeShip && subtotal < FREE_SHIPPING_THRESHOLD && (
-                <div style={{ padding:"8px 10px", backgroundColor:"#F5F2ED", borderRadius:"3px", marginBottom:"14px" }}>
-                  <p style={{ fontSize:"9px", color:"#7A7570" }}>
-                    Add <strong style={{ color:"#1A1816" }}>{(FREE_SHIPPING_THRESHOLD - subtotal).toLocaleString()} EGP</strong> more for free delivery
-                  </p>
-                </div>
-              )}
-              <div style={{ display:"flex", justifyContent:"space-between", paddingTop:"12px", borderTop:"1px solid #EDE9E3" }}>
-                <span style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" }}>Total</span>
-                <span className="serif" style={{ fontSize:"22px", fontWeight:400 }}>{total.toLocaleString()} <span style={{ fontSize:"11px", color:"#9A9590" }}>EGP</span></span>
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "12px", borderTop: "1px solid #EDE9E3" }}>
+                <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.08em" }}>Total</span>
+                <span className="serif" style={{ fontSize: "20px", fontWeight: 400 }}>{total.toLocaleString()} EGP</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
