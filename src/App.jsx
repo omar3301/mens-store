@@ -690,7 +690,7 @@ function CheckoutPage({ cart, onBack, onPlaceOrder, onUpdateQty, onRemoveItem })
                   </div>
                   <div style={{ flex:1 }}>
                     <p style={{ fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14,color:"var(--text)",marginBottom:2 }}>Store Pickup</p>
-                    <p style={{ fontSize:11,color:"var(--muted)" }}>Khub · Shebin El Kom · Menofia</p>
+                    <p style={{ fontSize:11,color:"var(--muted)" }}>Sola Brand & Boutique .Al Gala Al Bahari · Shebin El Kom · Menofia</p>
                   </div>
                   <span style={{ fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,color:"var(--green)" }}>Free</span>
                 </label>
@@ -734,7 +734,7 @@ function CheckoutPage({ cart, onBack, onPlaceOrder, onUpdateQty, onRemoveItem })
                   <MapPin size={15} color="var(--green)"/>
                   <span style={{ fontFamily:"'Syne',sans-serif",fontSize:13,fontWeight:700,color:"var(--green)" }}>Pickup Address</span>
                 </div>
-                <p style={{ fontSize:13,color:"var(--muted)",lineHeight:1.7 }}>Khub, Shebin El Kom, Menofia Governorate, Egypt</p>
+                <p style={{ fontSize:13,color:"var(--muted)",lineHeight:1.7 }}>Sola Brand & Boutique, Al Gala Al Bahari, Shebin El Kom, Menofia Governorate, Egypt</p>
                 <div style={{ display:"flex",alignItems:"center",gap:8,marginTop:8 }}>
                   <Clock size={13} color="var(--muted)"/>
                   <span style={{ fontSize:11,color:"var(--muted)" }}>Open Sat–Fri · 6:00 PM – 12:00 AM</span>
@@ -831,12 +831,12 @@ function ShowroomSection() {
           <span style={{ display:"inline-block",padding:"4px 12px",borderRadius:20,background:"rgba(232,193,112,0.15)",border:"1px solid rgba(232,193,112,0.3)",fontSize:10,fontWeight:700,letterSpacing:"0.14em",color:"var(--accent)",textTransform:"uppercase",marginBottom:20 }}>Showroom</span>
           <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:"clamp(30px,5vw,46px)",fontWeight:800,lineHeight:1.1,marginBottom:16 }}>Come<br/>see us.</h2>
           <p style={{ fontSize:13,color:"var(--muted)",lineHeight:1.7,marginBottom:24 }}>
-            Khub — Shebin El Kom<br/>Menofia Governorate, Egypt
+            Sola Brand & Boutique - Al Gala Al Bahari — Shebin El Kom<br/>Menofia Governorate, Egypt
           </p>
           <p style={{ fontSize:12,color:"var(--muted)",lineHeight:1.7,marginBottom:24 }}>
             Try before you buy. Our team will help you find the right fit — no pressure, just great style.
           </p>
-          <a href="https://maps.google.com/?q=Shebin+El+Kom+Menofia+Egypt" target="_blank" rel="noreferrer" style={{ display:"inline-flex",alignItems:"center",gap:8,padding:"10px 18px",borderRadius:"var(--r-sm)",border:"1px solid var(--border)",color:"var(--text)",fontSize:12,fontWeight:600,transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--accent)";e.currentTarget.style.color="var(--accent)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text)";}}>
+          <a href="https://maps.app.goo.gl/GceirPiDPp7rkwGx9" target="_blank" rel="noreferrer" style={{ display:"inline-flex",alignItems:"center",gap:8,padding:"10px 18px",borderRadius:"var(--r-sm)",border:"1px solid var(--border)",color:"var(--text)",fontSize:12,fontWeight:600,transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--accent)";e.currentTarget.style.color="var(--accent)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--text)";}}>
             <MapPin size={14}/> Open in Maps
           </a>
         </div>
@@ -858,7 +858,7 @@ function ShowroomSection() {
             <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"var(--muted)",marginBottom:8 }}>Talk to us</p>
             <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,lineHeight:1.2,marginBottom:10 }}>Not sure<br/>what to get?</h3>
             <p style={{ fontSize:12,color:"var(--muted)",lineHeight:1.7,marginBottom:16 }}>Send us a message and a real person on our team will point you in the right direction — no bots.</p>
-            <a href="https://wa.me/201000000000" target="_blank" rel="noreferrer" style={{ display:"inline-flex",alignItems:"center",gap:10,padding:"12px 20px",borderRadius:"var(--r-sm)",background:"rgba(37,211,102,0.15)",border:"1px solid rgba(37,211,102,0.3)",color:"#25D366",fontSize:13,fontWeight:700,fontFamily:"'Syne',sans-serif",transition:"all 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background="rgba(37,211,102,0.22)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(37,211,102,0.15)"}>
+            <a href="https://wa.me/201010886611" target="_blank" rel="noreferrer" style={{ display:"inline-flex",alignItems:"center",gap:10,padding:"12px 20px",borderRadius:"var(--r-sm)",background:"rgba(37,211,102,0.15)",border:"1px solid rgba(37,211,102,0.3)",color:"#25D366",fontSize:13,fontWeight:700,fontFamily:"'Syne',sans-serif",transition:"all 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background="rgba(37,211,102,0.22)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(37,211,102,0.15)"}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               WhatsApp Us
             </a>
@@ -999,7 +999,7 @@ export default function App() {
             <div style={{ padding:"14px 16px",borderRadius:"var(--r-sm)",background:"rgba(76,175,125,0.1)",border:"1px solid rgba(76,175,125,0.2)",marginBottom:28,display:"flex",alignItems:"center",gap:10,justifyContent:"center" }}>
               <Store size={16} color="var(--green)"/>
               <div style={{ textAlign:"left" }}>
-                <p style={{ fontSize:12,color:"var(--green)",fontWeight:600 }}>Pickup · Khub, Shebin El Kom</p>
+                <p style={{ fontSize:12,color:"var(--green)",fontWeight:600 }}>Pickup · Sola Brand & Boutique,Al Gala Al Bahari, Shebin El Kom</p>
                 <p style={{ fontSize:11,color:"rgba(76,175,125,0.7)" }}>Sat–Fri · 6:00 PM – 12:00 AM</p>
               </div>
             </div>
@@ -1200,7 +1200,7 @@ export default function App() {
             </div>
             {[
               {label:"Company",links:[{name:"About",href:"#"},{name:"Journal",href:"#"},{name:"Showroom",href:"#showroom"}]},
-              {label:"Support",links:[{name:"Shipping",href:"#"},{name:"Returns",href:"#"},{name:"Size Guide",href:"#"},{name:"Contact",href:"mailto:hello@solastore.com"}]},
+              {label:"Support",links:[{name:"Shipping",href:"#"},{name:"Returns",href:"#"},{name:"Size Guide",href:"#"},{name:"Contact",href:"https://wa.me/201010886611"}]},
             ].map(col=>(
               <div key={col.label}>
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"var(--muted)",marginBottom:16 }}>{col.label}</p>
