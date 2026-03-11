@@ -575,6 +575,25 @@ function CartDrawer({ cart, onClose, onCheckout, onUpdateQty, onRemoveItem }) {
   );
 }
 
+// ─── CHECKOUT HELPERS (defined outside component to prevent remount on re-render) ──
+const checkoutInputStyle = (hasErr) => ({
+  width:"100%",padding:"13px 14px",
+  background:"var(--surface2)",border:`1px solid ${hasErr?"var(--red)":"var(--border)"}`,
+  borderRadius:"var(--r-sm)",color:"var(--text)",fontSize:14,
+  outline:"none",transition:"border-color 0.15s",appearance:"none"
+});
+
+function CheckoutField({ label, error, children }) {
+  return (
+    <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+      <label style={{ fontSize:10,fontWeight:600,letterSpacing:"0.12em",textTransform:"uppercase",color:error?"var(--red)":"var(--muted)" }}>
+        {label}{error&&<span style={{ fontWeight:400,textTransform:"none",letterSpacing:0,marginLeft:6 }}>— {error}</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
 // ─── CHECKOUT ────────────────────────────────────────
 function CheckoutPage({ cart, onBack, onPlaceOrder, onUpdateQty, onRemoveItem }) {
   const [form, setForm] = useState({ firstName:"",lastName:"",phone:"",email:"",address:"",apartment:"",city:"",governorate:"",deliveryMethod:"delivery" });
@@ -627,21 +646,9 @@ function CheckoutPage({ cart, onBack, onPlaceOrder, onUpdateQty, onRemoveItem })
     } finally { setLoading(false); }
   };
 
-  const inputStyle = (hasErr) => ({
-    width:"100%",padding:"13px 14px",
-    background:"var(--surface2)",border:`1px solid ${hasErr?"var(--red)":"var(--border)"}`,
-    borderRadius:"var(--r-sm)",color:"var(--text)",fontSize:14,
-    outline:"none",transition:"border-color 0.15s",appearance:"none"
-  });
-
-  const Field = ({ label, error, children }) => (
-    <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-      <label style={{ fontSize:10,fontWeight:600,letterSpacing:"0.12em",textTransform:"uppercase",color:error?"var(--red)":"var(--muted)" }}>
-        {label}{error&&<span style={{ fontWeight:400,textTransform:"none",letterSpacing:0,marginLeft:6 }}>— {error}</span>}
-      </label>
-      {children}
-    </div>
-  );
+  // Alias for convenience inside JSX
+  const inputStyle = checkoutInputStyle;
+  const Field = CheckoutField;
 
   return (
     <div style={{ background:"var(--bg)",minHeight:"100vh",color:"var(--text)" }}>
