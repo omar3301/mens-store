@@ -84,7 +84,7 @@ function getShip(sub) {
 function stockStatus(p) {
   const qty = p.stockQty;
   if (qty === null || qty === undefined || qty === 0) return { type: "ok", label: null };
-  if (qty === 1) return { type: "last", label: "Last piece" };
+  if (qty === 1) return { type: "last", label: "one piece left" };
   if (qty <= 3) return { type: "low", label: `Only ${qty} left` };
   return { type: "ok", label: null };
 }
@@ -812,8 +812,8 @@ function CheckoutPage({ cart, onBack, onPlaceOrder, onUpdateQty, onRemoveItem })
 // ─── TRUST CARDS ────────────────────────────────────
 const TRUST = [
   { icon:"⭐", title:"Genuine Gear Only", desc:"Every product ships from official brand distributors. No fakes, ever." },
-  { icon:"🔄", title:"Changed Your Mind?", desc:"Return or swap anything within 14 days — no awkward questions." },
-  { icon:"🛡️", title:"Covered for 6 Months", desc:"Every item carries full manufacturer warranty." },
+  { icon:"🔄", title:"Changed Your Mind?", desc:"Refund and exchange within 14 days — no awkward questions." },
+  { icon:"🛡️", title:"Covered for 6 Months", desc:"All item carries full manufacturer warranty." },
   { icon:"👕", title:"Tried & Tested", desc:"Our team personally wears every piece we sell. We only stock what we believe in." },
 ];
 
@@ -1061,7 +1061,7 @@ export default function App() {
           <button onClick={()=>{setPage("home");setActiveProduct(null);window.scrollTo({top:0,behavior:"instant"});}} style={{ display:"flex",alignItems:"center",gap:10,background:"none",border:"none",cursor:"pointer",color:"inherit" }}>
             <img src="/logo.jpg" alt="Sola" style={{ height:32,width:32,objectFit:"contain",borderRadius:6 }} onError={e=>e.currentTarget.style.display="none"}/>
             <div>
-              <div style={{ fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:800,letterSpacing:"0.18em",lineHeight:1.1 }}>SOLA</div>
+              <div style={{ fontFamily: "'Michroma', sans-serif", fontSize: 16, fontWeight: 700, letterSpacing: "0.25em", lineHeight: 1 }}>SOLA</div>
               <div style={{ fontSize:8,fontWeight:500,letterSpacing:"0.22em",textTransform:"uppercase",color:"var(--muted)",lineHeight:1 }}>Brand & Boutique</div>
             </div>
           </button>
