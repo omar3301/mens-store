@@ -1090,24 +1090,58 @@ export default function App() {
       </nav>
       <style>{`@media(max-width:767px){#burger-btn{display:flex!important;}}`}</style>
 
+      {/* ANNOUNCEMENT BAR */}
+      <div style={{ background:"linear-gradient(90deg,#C0392B 0%,#E05252 40%,#C0392B 100%)",padding:"10px 16px",textAlign:"center",position:"relative",overflow:"hidden" }}>
+        <div style={{ position:"absolute",inset:0,backgroundImage:"repeating-linear-gradient(45deg,rgba(255,255,255,0.04) 0,rgba(255,255,255,0.04) 1px,transparent 0,transparent 50%)",backgroundSize:"8px 8px",pointerEvents:"none" }}/>
+        <div style={{ display:"inline-flex",alignItems:"center",gap:10,position:"relative",zIndex:1,flexWrap:"wrap",justifyContent:"center" }}>
+          <Flame size={13} style={{ color:"#FFD700",flexShrink:0 }}/>
+          <span style={{ fontSize:11,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#fff" }}>
+            SALE — UP TO <span style={{ color:"#FFD700",fontSize:13 }}>70% OFF</span> · LIMITED TIME ONLY
+          </span>
+          <span style={{ fontSize:10,color:"rgba(255,255,255,0.7)",letterSpacing:"0.1em" }}>·</span>
+          <a href="#collection" style={{ fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:"#FFD700",textDecoration:"underline",textUnderlineOffset:3,whiteSpace:"nowrap" }}>
+            Shop Now →
+          </a>
+          <Flame size={13} style={{ color:"#FFD700",flexShrink:0 }}/>
+        </div>
+      </div>
+
       {/* HERO */}
       <section style={{ minHeight:"88vh",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden",background:"linear-gradient(135deg,#0C0C0C 0%,#161616 50%,#0C0C0C 100%)" }}>
         <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse 80% 60% at 60% 40%,rgba(232,193,112,0.06) 0%,transparent 70%)",pointerEvents:"none" }}/>
         <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px)",backgroundSize:"60px 60px",pointerEvents:"none" }}/>
         <div style={{ textAlign:"center",padding:"clamp(80px,12vh,120px) 24px 60px",maxWidth:700,position:"relative",zIndex:2,animation:"fadeUp 0.9s ease 0.1s both" }}>
-          <div style={{ display:"inline-flex",alignItems:"center",gap:8,marginBottom:24,padding:"6px 14px",borderRadius:20,background:"rgba(232,193,112,0.1)",border:"1px solid rgba(232,193,112,0.2)" }}>
-            <div style={{ width:6,height:6,borderRadius:"50%",background:"var(--accent)",animation:"pulse 2s ease-in-out infinite" }}/>
-            <span style={{ fontSize:10,fontWeight:600,letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--accent)" }}>Spring / Summer 2026</span>
+
+          {/* Sale badge row */}
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:20,flexWrap:"wrap" }}>
+            <div style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 16px",borderRadius:20,background:"rgba(224,82,82,0.15)",border:"1px solid rgba(224,82,82,0.4)" }}>
+              <Flame size={11} style={{ color:"#E05252" }}/>
+              <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#E05252" }}>UP TO 70% OFF</span>
+            </div>
+            <div style={{ display:"inline-flex",alignItems:"center",gap:8,padding:"6px 14px",borderRadius:20,background:"rgba(232,193,112,0.1)",border:"1px solid rgba(232,193,112,0.2)" }}>
+              <div style={{ width:6,height:6,borderRadius:"50%",background:"var(--accent)",animation:"pulse 2s ease-in-out infinite" }}/>
+              <span style={{ fontSize:10,fontWeight:600,letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--accent)" }}>Spring / Summer 2026</span>
+            </div>
           </div>
+
           <h1 style={{ fontFamily:"'Syne',sans-serif",fontSize:"clamp(42px,10vw,96px)",fontWeight:800,lineHeight:1.0,letterSpacing:"-0.03em",marginBottom:20,background:"linear-gradient(135deg,#F0EDEA 0%,#E8C170 50%,#F0EDEA 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text" }}>
             Elevate<br/>the Everyday.
           </h1>
-          <p style={{ fontSize:"clamp(13px,1.8vw,15px)",color:"var(--muted)",lineHeight:1.85,marginBottom:36,maxWidth:480,margin:"0 auto 36px" }}>
+          <p style={{ fontSize:"clamp(13px,1.8vw,15px)",color:"var(--muted)",lineHeight:1.85,marginBottom:16,maxWidth:480,margin:"0 auto 16px" }}>
             Refined fashion for the modern man. Crafted with intention. Worn without effort.
           </p>
+
+          {/* Urgency line */}
+          <div style={{ display:"inline-flex",alignItems:"center",gap:6,marginBottom:32,padding:"8px 18px",borderRadius:"var(--r-sm)",background:"rgba(224,82,82,0.08)",border:"1px solid rgba(224,82,82,0.25)" }}>
+            <AlertTriangle size={11} style={{ color:"#E05252",flexShrink:0 }}/>
+            <span style={{ fontSize:11,color:"rgba(240,237,234,0.7)",letterSpacing:"0.06em" }}>
+              Sale ends soon — <span style={{ color:"#E05252",fontWeight:700 }}>limited stock available</span>
+            </span>
+          </div>
+
           <div style={{ display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap" }}>
             <a href="#collection" style={{ display:"inline-flex",alignItems:"center",gap:8,padding:"14px 28px",borderRadius:"var(--r)",background:"var(--accent)",color:"#0C0C0C",fontSize:12,fontWeight:700,fontFamily:"'Syne',sans-serif",letterSpacing:"0.08em",textTransform:"uppercase",transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.88"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-              Shop Collection <ArrowRight size={13}/>
+              Shop Sale Now <ArrowRight size={13}/>
             </a>
             <a href="#showroom" style={{ display:"inline-flex",alignItems:"center",gap:8,padding:"14px 28px",borderRadius:"var(--r)",background:"transparent",color:"var(--text)",fontSize:12,fontWeight:600,letterSpacing:"0.08em",textTransform:"uppercase",border:"1px solid var(--border)",transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.borderColor="var(--accent)"} onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}>
               Visit Showroom
@@ -1123,7 +1157,7 @@ export default function App() {
       {/* MARQUEE — slower (35s) */}
       <div style={{ background:"var(--accent)",padding:"10px 0",overflow:"hidden",whiteSpace:"nowrap" }}>
         <div style={{ display:"inline-flex",gap:48,animation:"marquee 35s linear infinite" }}>
-          {Array(8).fill(["New Collection SS26","Sola Brand & Boutique · Menofia","Cash on Delivery","Free Shipping Over 1500 EGP","Visit our Showroom · 6PM–12AM"]).flat().map((t,i)=>(
+          {Array(8).fill(["🔥 SALE UP TO 70% OFF","New Collection SS26","Sola Brand & Boutique · Menofia","Cash on Delivery","Free Shipping Over 1500 EGP","Visit our Showroom · 6PM–12AM"]).flat().map((t,i)=>(
             <span key={i} style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#0C0C0C",opacity:0.8 }}>{t} &nbsp;·</span>
           ))}
         </div>
