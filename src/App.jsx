@@ -91,7 +91,7 @@ function stockStatus(p) {
 
 // ─── GLOBAL CSS ──────────────────────────────────────
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+  /* Fonts are loaded via index.html preconnect + link for performance */
 
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
@@ -103,13 +103,14 @@ const CSS = `
   :root {
     --bg:#0C0C0C; --surface:#161616; --surface2:#1E1E1E;
     --border:rgba(255,255,255,0.08); --text:#F0EDEA;
-    --muted:rgba(240,237,234,0.45); --accent:#E8C170; --accent2:#C4955A;
+    --muted:rgba(240,237,234,0.65); --accent:#E8C170; --accent2:#C4955A;
     --red:#E05252; --green:#4CAF7D; --orange:#F59E42;
     --r:12px; --r-sm:8px;
   }
 
   ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:var(--bg);} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
 
+  /* Use will-change only on actively animating elements to enable GPU compositing */
   @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
   @keyframes slideRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
@@ -121,7 +122,7 @@ const CSS = `
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
   @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(232,193,112,0.1)}50%{box-shadow:0 0 40px rgba(232,193,112,0.25)}}
   @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-  @keyframes urgentPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+  @keyframes urgentPulse{0%,100%{opacity:1}50%{opacity:0.7}}
 
   .skeleton{background:linear-gradient(90deg,#1a1a1a 25%,#252525 50%,#1a1a1a 75%);background-size:800px 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
 
@@ -147,6 +148,13 @@ const CSS = `
 
   .touch-target{min-height:44px;min-width:44px;}
 `;
+
+// Helper to make Cloudinary images responsive (auto-width transform)
+function responsiveCloudinaryUrl(src, width = 400) {
+  if (!src || !src.includes('res.cloudinary.com')) return src;
+  // Insert w_{width},c_fill,q_auto,f_auto transform
+  return src.replace('/upload/', `/upload/w_${width},c_fill,q_auto,f_auto/`);
+}
 
 // ─── SKELETON ────────────────────────────────────────
 const ProductSkeleton = () => (
@@ -194,7 +202,8 @@ const ProductCard = memo(({ product, idx, onTap }) => {
     <div onClick={() => onTap(product)} style={{ animation:`fadeUp 0.5s ease ${idx*0.06}s both`, cursor:"pointer" }}>
       <div style={{ position:"relative", aspectRatio:"3/4", borderRadius:"var(--r)", overflow:"hidden", background:"var(--surface)" }}>
         {img ? (
-          <img src={img} alt={product.name} loading="lazy"
+          <img src={responsiveCloudinaryUrl(img, 400)} alt={product.name} loading="lazy"
+            width="400" height="533"
             style={{ width:"100%", height:"100%", objectFit:"cover", transition:"transform 0.4s ease" }}
             onMouseEnter={e=>e.currentTarget.style.transform="scale(1.06)"}
             onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}/>
@@ -285,7 +294,7 @@ function ProductPage({ product, onClose, onAddToCart }) {
     <div style={{ background:"var(--bg)", minHeight:"100vh", animation:"fadeIn 0.25s ease" }}>
       {/* Breadcrumb */}
       <div style={{ padding:"14px 20px", display:"flex", alignItems:"center", gap:8, fontSize:11, color:"var(--muted)" }}>
-        <button onClick={onClose} style={{ color:"var(--muted)", display:"flex", alignItems:"center", gap:5, transition:"color 0.15s", fontSize:11 }}
+        <button aria-label="Go to home" onClick={onClose} style={{ color:"var(--muted)", display:"flex", alignItems:"center", gap:5, transition:"color 0.15s", fontSize:11 }}
           onMouseEnter={e=>e.currentTarget.style.color="var(--text)"} onMouseLeave={e=>e.currentTarget.style.color="var(--muted)"}>
           <Home size={12}/> Home
         </button>
@@ -308,8 +317,8 @@ function ProductPage({ product, onClose, onAddToCart }) {
                 <img src={imgs[imgIdx]} alt={product.name} style={{ width:"100%", height:"100%", objectFit:"cover", transition:"opacity 0.2s" }}/>
                 {total > 1 && (
                   <>
-                    <button onClick={() => setImgIdx(i=>(i-1+total)%total)} style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",width:38,height:38,borderRadius:"50%",background:"rgba(12,12,12,0.7)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center" }}><ChevronLeft size={16}/></button>
-                    <button onClick={() => setImgIdx(i=>(i+1)%total)} style={{ position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",width:38,height:38,borderRadius:"50%",background:"rgba(12,12,12,0.7)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center" }}><ChevronRight size={16}/></button>
+                    <button aria-label="Previous image" onClick={() => setImgIdx(i=>(i-1+total)%total)} style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",width:38,height:38,borderRadius:"50%",background:"rgba(12,12,12,0.7)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center" }}><ChevronLeft size={16}/></button>
+                    <button aria-label="Next image" onClick={() => setImgIdx(i=>(i+1)%total)} style={{ position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",width:38,height:38,borderRadius:"50%",background:"rgba(12,12,12,0.7)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center" }}><ChevronRight size={16}/></button>
                   </>
                 )}
                 {disc && <div style={{ position:"absolute",top:14,left:14,background:"var(--accent)",color:"#0C0C0C",padding:"5px 12px",borderRadius:20,fontSize:11,fontWeight:700,fontFamily:"'Syne',sans-serif" }}>{disc}</div>}
@@ -487,7 +496,7 @@ function CartDrawer({ cart, onClose, onCheckout, onUpdateQty, onRemoveItem }) {
             <span style={{ fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:700 }}>Your Bag</span>
             {cart.length>0 && <span style={{ background:"var(--accent)",color:"#0C0C0C",width:20,height:20,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800 }}>{cart.length}</span>}
           </div>
-          <button onClick={close} style={{ width:34,height:34,borderRadius:"50%",background:"var(--surface2)",color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s" }} onMouseEnter={e=>e.currentTarget.style.color="var(--text)"} onMouseLeave={e=>e.currentTarget.style.color="var(--muted)"}><X size={15}/></button>
+          <button aria-label="Close shopping bag" onClick={close} style={{ width:34,height:34,borderRadius:"50%",background:"var(--surface2)",color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s" }} onMouseEnter={e=>e.currentTarget.style.color="var(--text)"} onMouseLeave={e=>e.currentTarget.style.color="var(--muted)"}><X size={15}/></button>
         </div>
 
         {/* Items */}
@@ -517,9 +526,9 @@ function CartDrawer({ cart, onClose, onCheckout, onUpdateQty, onRemoveItem }) {
                       </div>
                       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                         <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                          <button onClick={()=>onUpdateQty(key,-1)} style={{ width:26,height:26,borderRadius:6,background:"var(--surface)",border:"1px solid var(--border)",color:"var(--text)",display:"flex",alignItems:"center",justifyContent:"center" }}><Minus size={12}/></button>
+                          <button aria-label={`Decrease quantity of ${item.name}`} onClick={()=>onUpdateQty(key,-1)} style={{ width:26,height:26,borderRadius:6,background:"var(--surface)",border:"1px solid var(--border)",color:"var(--text)",display:"flex",alignItems:"center",justifyContent:"center" }}><Minus size={12}/></button>
                           <span style={{ fontSize:13,fontWeight:600,minWidth:18,textAlign:"center" }}>{item.qty||1}</span>
-                          <button onClick={()=>onUpdateQty(key,1)} style={{ width:26,height:26,borderRadius:6,background:"var(--surface)",border:"1px solid var(--border)",color:"var(--text)",display:"flex",alignItems:"center",justifyContent:"center" }}><Plus size={12}/></button>
+                          <button aria-label={`Increase quantity of ${item.name}`} onClick={()=>onUpdateQty(key,1)} style={{ width:26,height:26,borderRadius:6,background:"var(--surface)",border:"1px solid var(--border)",color:"var(--text)",display:"flex",alignItems:"center",justifyContent:"center" }}><Plus size={12}/></button>
                         </div>
                         <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end" }}>
                           <span style={{ fontSize:14,fontWeight:700,color:hasD?"var(--accent)":"var(--text)" }}>{(sp*(item.qty||1)).toLocaleString()} EGP</span>
@@ -527,7 +536,7 @@ function CartDrawer({ cart, onClose, onCheckout, onUpdateQty, onRemoveItem }) {
                         </div>
                       </div>
                     </div>
-                    <button onClick={()=>onRemoveItem(key)} style={{ color:"var(--muted)",alignSelf:"flex-start",marginTop:2,padding:4,display:"flex",borderRadius:4,transition:"color 0.15s" }} onMouseEnter={e=>e.currentTarget.style.color="var(--red)"} onMouseLeave={e=>e.currentTarget.style.color="var(--muted)"}><Trash2 size={14}/></button>
+                    <button aria-label={`Remove ${item.name} from bag`} onClick={()=>onRemoveItem(key)} style={{ color:"var(--muted)",alignSelf:"flex-start",marginTop:2,padding:4,display:"flex",borderRadius:4,transition:"color 0.15s" }} onMouseEnter={e=>e.currentTarget.style.color="var(--red)"} onMouseLeave={e=>e.currentTarget.style.color="var(--muted)"}><Trash2 size={14}/></button>
                   </div>
                 );
               })}
@@ -958,9 +967,9 @@ export default function App() {
         {/* Minimal nav for product page */}
         <nav style={{ position:"sticky",top:0,zIndex:700,background:"rgba(12,12,12,0.9)",backdropFilter:"blur(16px)",borderBottom:"1px solid var(--border)",padding:"0 20px" }}>
           <div style={{ maxWidth:1280,margin:"0 auto",height:56,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-            <button onClick={closeProduct} style={{ display:"flex",alignItems:"center",gap:8,color:"var(--muted)",fontSize:12,fontWeight:600,letterSpacing:"0.06em",transition:"color 0.15s" }} onMouseEnter={e=>e.currentTarget.style.color="var(--text)"} onMouseLeave={e=>e.currentTarget.style.color="var(--muted)"}><ChevronLeft size={15}/> Back</button>
-            <button onClick={closeProduct} style={{ fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,letterSpacing:"0.18em",background:"none",border:"none",color:"var(--text)",cursor:"pointer" }}>SOLA</button>
-            <button onClick={()=>setCartOpen(true)} style={{ height:36,borderRadius:10,padding:"0 12px",background:cartCount>0?"var(--accent)":"var(--surface)",border:`1px solid ${cartCount>0?"var(--accent)":"var(--border)"}`,color:cartCount>0?"#0C0C0C":"var(--muted)",display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:600,transition:"all 0.2s" }}>
+            <button aria-label="Back to home" onClick={closeProduct} style={{ display:"flex",alignItems:"center",gap:8,color:"var(--muted)",fontSize:12,fontWeight:600,letterSpacing:"0.06em",transition:"color 0.15s" }} onMouseEnter={e=>e.currentTarget.style.color="var(--text)"} onMouseLeave={e=>e.currentTarget.style.color="var(--muted)"}><ChevronLeft size={15}/> Back</button>
+            <button aria-label="Sola home" onClick={closeProduct} style={{ fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,letterSpacing:"0.18em",background:"none",border:"none",color:"var(--text)",cursor:"pointer" }}>SOLA</button>
+            <button aria-label={`Open shopping bag${cartCount>0?`, ${cartCount} item${cartCount!==1?'s':''}`:''}` } onClick={()=>setCartOpen(true)} style={{ height:36,borderRadius:10,padding:"0 12px",background:cartCount>0?"var(--accent)":"var(--surface)",border:`1px solid ${cartCount>0?"var(--accent)":"var(--border)"}`,color:cartCount>0?"#0C0C0C":"var(--muted)",display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:600,transition:"all 0.2s" }}>
               <ShoppingBag size={15}/>
               {cartCount>0&&<span style={{ fontFamily:"'Syne',sans-serif",fontWeight:800 }}>{cartCount}</span>}
             </button>
@@ -1025,8 +1034,8 @@ export default function App() {
             <div style={{ maxWidth:700,margin:"0 auto",display:"flex",alignItems:"center",gap:12 }}>
               <Search size={18} color="var(--accent)"/>
               <input ref={searchRef} autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search products…" style={{ flex:1,background:"none",border:"none",color:"var(--text)",fontSize:18,outline:"none" }}/>
-              {searchQ&&<button onClick={()=>setSearchQ("")} style={{ color:"var(--muted)",display:"flex" }}><X size={16}/></button>}
-              <button onClick={()=>{setSearchOpen(false);setSearchQ("");}} style={{ color:"var(--muted)",fontSize:12,fontWeight:600,padding:"6px 12px",borderLeft:"1px solid var(--border)" }}>Close</button>
+              {searchQ&&<button aria-label="Clear search" onClick={()=>setSearchQ("")} style={{ color:"var(--muted)",display:"flex" }}><X size={16}/></button>}
+              <button aria-label="Close search" onClick={()=>{setSearchOpen(false);setSearchQ("");}} style={{ color:"var(--muted)",fontSize:12,fontWeight:600,padding:"6px 12px",borderLeft:"1px solid var(--border)" }}>Close</button>
             </div>
             {searchQ.trim()&&(
               <div style={{ maxWidth:700,margin:"12px auto 0",paddingTop:12,borderTop:"1px solid var(--border)" }}>
@@ -1071,11 +1080,11 @@ export default function App() {
             ))}
           </div>
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-            <button onClick={()=>{setSearchOpen(true);setTimeout(()=>searchRef.current?.focus(),80);}} style={{ width:40,height:40,borderRadius:10,background:"var(--surface)",border:"1px solid var(--border)",color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.color="var(--text)";e.currentTarget.style.borderColor="var(--accent)";}} onMouseLeave={e=>{e.currentTarget.style.color="var(--muted)";e.currentTarget.style.borderColor="var(--border)";}}><Search size={16}/></button>
-            <button onClick={()=>setCartOpen(true)} style={{ height:40,borderRadius:10,padding:"0 14px",background:cartCount>0?"var(--accent)":"var(--surface)",border:`1px solid ${cartCount>0?"var(--accent)":"var(--border)"}`,color:cartCount>0?"#0C0C0C":"var(--muted)",display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:600,transition:"all 0.2s" }}>
+            <button aria-label="Open search" onClick={()=>{setSearchOpen(true);setTimeout(()=>searchRef.current?.focus(),80);}} style={{ width:40,height:40,borderRadius:10,background:"var(--surface)",border:"1px solid var(--border)",color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.color="var(--text)";e.currentTarget.style.borderColor="var(--accent)";}} onMouseLeave={e=>{e.currentTarget.style.color="var(--muted)";e.currentTarget.style.borderColor="var(--border)";}}><Search size={16}/></button>
+            <button aria-label={`Open shopping bag${cartCount>0?`, ${cartCount} item${cartCount!==1?'s':''}`:''}` } onClick={()=>setCartOpen(true)} style={{ height:40,borderRadius:10,padding:"0 14px",background:cartCount>0?"var(--accent)":"var(--surface)",border:`1px solid ${cartCount>0?"var(--accent)":"var(--border)"}`,color:cartCount>0?"#0C0C0C":"var(--muted)",display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:600,transition:"all 0.2s" }}>
               <ShoppingBag size={15}/>{cartCount>0&&<span style={{ fontFamily:"'Syne',sans-serif",fontWeight:800 }}>{cartCount}</span>}
             </button>
-            <button id="burger-btn" onClick={()=>setMobileNav(!mobileNav)} style={{ display:"none",width:40,height:40,borderRadius:10,background:"var(--surface)",border:"1px solid var(--border)",color:"var(--text)",alignItems:"center",justifyContent:"center" }}>
+            <button id="burger-btn" aria-label={mobileNav?"Close navigation menu":"Open navigation menu"} aria-expanded={mobileNav} onClick={()=>setMobileNav(!mobileNav)} style={{ display:"none",width:40,height:40,borderRadius:10,background:"var(--surface)",border:"1px solid var(--border)",color:"var(--text)",alignItems:"center",justifyContent:"center" }}>
               {mobileNav?<X size={16}/>:<Menu size={16}/>}
             </button>
           </div>
@@ -1091,6 +1100,7 @@ export default function App() {
       <style>{`@media(max-width:767px){#burger-btn{display:flex!important;}}`}</style>
 
       {/* ANNOUNCEMENT BAR */}
+      <main>
       <div style={{ background:"linear-gradient(90deg,#C0392B 0%,#E05252 40%,#C0392B 100%)",padding:"10px 16px",textAlign:"center",position:"relative",overflow:"hidden" }}>
         <div style={{ position:"absolute",inset:0,backgroundImage:"repeating-linear-gradient(45deg,rgba(255,255,255,0.04) 0,rgba(255,255,255,0.04) 1px,transparent 0,transparent 50%)",backgroundSize:"8px 8px",pointerEvents:"none" }}/>
         <div style={{ display:"inline-flex",alignItems:"center",gap:10,position:"relative",zIndex:1,flexWrap:"wrap",justifyContent:"center" }}>
@@ -1207,6 +1217,8 @@ export default function App() {
         </div>
       </section>
 
+      </main>
+
       {/* FOOTER */}
       <footer style={{ background:"var(--surface)",borderTop:"1px solid var(--border)",padding:"clamp(40px,6vw,64px) 20px 24px" }}>
         <div style={{ maxWidth:1280,margin:"0 auto" }}>
@@ -1222,11 +1234,11 @@ export default function App() {
               <p style={{ fontSize:12,lineHeight:1.8,color:"var(--muted)",maxWidth:200 }}>Refined fashion for the considered man. Based in Menofia, Egypt.</p>
               <div style={{ display:"flex",gap:12,marginTop:16 }}>
                 {[
-                  {href:"https://www.instagram.com/sola.boutiquee",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1" fill="currentColor"/></svg>},
-                  {href:"https://www.facebook.com/share/14VnCCFNwL1/",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>},
-                  {href:"https://www.tiktok.com/@sola.boutiquee",icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.78a4.85 4.85 0 0 1-1.01-.09z"/></svg>},
+                  {href:"https://www.instagram.com/sola.boutiquee", label:"Follow Sola on Instagram", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1" fill="currentColor"/></svg>},
+                  {href:"https://www.facebook.com/share/14VnCCFNwL1/", label:"Follow Sola on Facebook", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>},
+                  {href:"https://www.tiktok.com/@sola.boutiquee", label:"Follow Sola on TikTok", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.78a4.85 4.85 0 0 1-1.01-.09z"/></svg>},
                 ].map((s,i)=>(
-                  <a key={i} href={s.href} target="_blank" rel="noreferrer" style={{ width:34,height:34,borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--muted)",transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.color="var(--accent)";e.currentTarget.style.borderColor="var(--accent)";}} onMouseLeave={e=>{e.currentTarget.style.color="var(--muted)";e.currentTarget.style.borderColor="var(--border)";}}>
+                  <a key={i} href={s.href} target="_blank" rel="noreferrer" aria-label={s.label} style={{ width:34,height:34,borderRadius:10,background:"rgba(255,255,255,0.05)",border:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--muted)",transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.color="var(--accent)";e.currentTarget.style.borderColor="var(--accent)";}} onMouseLeave={e=>{e.currentTarget.style.color="var(--muted)";e.currentTarget.style.borderColor="var(--border)";}}>
                     {s.icon}
                   </a>
                 ))}
@@ -1240,7 +1252,7 @@ export default function App() {
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"var(--muted)",marginBottom:16 }}>{col.label}</p>
                 <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                   {col.links.map(l=>(
-                    <a key={l.name} href={l.href} style={{ fontSize:13,color:"rgba(240,237,234,0.5)",transition:"color 0.15s" }} onMouseEnter={e=>e.currentTarget.style.color="var(--text)"} onMouseLeave={e=>e.currentTarget.style.color="rgba(240,237,234,0.5)"}>{l.name}</a>
+                    <a key={l.name} href={l.href} style={{ fontSize:13,color:"rgba(240,237,234,0.65)",transition:"color 0.15s" }} onMouseEnter={e=>e.currentTarget.style.color="var(--text)"} onMouseLeave={e=>e.currentTarget.style.color="rgba(240,237,234,0.65)"}>{l.name}</a>
                   ))}
                 </div>
               </div>
@@ -1259,8 +1271,8 @@ export default function App() {
             </div>
           </div>
           <div style={{ borderTop:"1px solid var(--border)",paddingTop:18,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8 }}>
-            <p style={{ fontSize:11,color:"rgba(240,237,234,0.2)" }}>© 2026 Sola Brand & Boutique. All rights reserved.</p>
-            <p style={{ fontSize:11,color:"rgba(240,237,234,0.2)" }}>Privacy · Terms · Cookies</p>
+            <p style={{ fontSize:11,color:"rgba(240,237,234,0.45)" }}>© 2026 Sola Brand & Boutique. All rights reserved.</p>
+            <p style={{ fontSize:11,color:"rgba(240,237,234,0.45)" }}>Privacy · Terms · Cookies</p>
           </div>
         </div>
       </footer>
