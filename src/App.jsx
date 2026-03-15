@@ -1271,8 +1271,8 @@ export default function App() {
             </div>
           </div>
           <div style={{ borderTop:"1px solid var(--border)",paddingTop:18,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8 }}>
-            <p style={{ fontSize:11,color:"rgba(240,237,234,0.45)" }}>© 2026 Sola Brand & Boutique. All rights reserved.</p>
-            <p style={{ fontSize:11,color:"rgba(240,237,234,0.45)" }}>Privacy · Terms · Cookies</p>
+            <p style={{ fontSize:12,color:"rgba(240,237,234,0.6)" }}>© 2026 Sola Brand & Boutique. All rights reserved.</p>
+            <p style={{ fontSize:12,color:"rgba(240,237,234,0.6)" }}>Privacy · Terms · Cookies</p>
           </div>
         </div>
       </footer>

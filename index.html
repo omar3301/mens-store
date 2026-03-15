@@ -9,6 +9,22 @@
     <meta name="description" content="Sola Brand & Boutique — Refined fashion for the modern man. Based in Menofia, Egypt." />
     <link rel="icon" type="image/jpeg" href="/logo.jpg" />
     <title>Sola Brand & Boutique</title>
+    <!-- Preconnect for fonts to eliminate render-blocking latency -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Preconnect for API -->
+    <link rel="preconnect" href="https://back-end-production-afdf.up.railway.app" />
+    <!-- Preconnect for Cloudinary images -->
+    <link rel="preconnect" href="https://res.cloudinary.com" />
+    <!-- Load fonts early with display=swap to prevent layout shift -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" />
+    <!-- Critical inline CSS to prevent layout shift before JS loads -->
+    <style>
+      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+      html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+      body{background:#0C0C0C;color:#F0EDEA;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;}
+      #root{min-height:100vh;}
+    </style>
   </head>
   <body>
     <div id="root"></div>
