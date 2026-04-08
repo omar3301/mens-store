@@ -242,7 +242,7 @@ const ProductCard = memo(({ product, idx, onTap }) => {
 ProductCard.displayName = "ProductCard";
 
 // ─── PRODUCT PAGE (full page, not popup) ─────────────
-function ProductPage({ product, onClose, onAddToCart }) {
+function ProductPage({ product, onClose, onAddToCart, onBuyNow }) {
   // Support both new format (product.variants) and legacy (product.colors)
   const variants = product.variants || [];
   const hasVariants = variants.length > 0;
@@ -429,14 +429,30 @@ function ProductPage({ product, onClose, onAddToCart }) {
             </div>
           )}
 
-          {/* Add to cart */}
-          <button onClick={handleAdd} style={{
+          {/* Buy Now */}
+          <button onClick={() => {
+            if (needsSize && !selSize) { setSizeErr(true); return; }
+            onBuyNow(product, selSize || "One Size", selColor?.name || "");
+          }} style={{
             width:"100%",padding:"17px",borderRadius:"var(--r)",
-            background:added?"var(--green)":"var(--accent)",
+            background:"var(--accent)",
             color:"#0C0C0C",fontSize:14,fontWeight:700,
             fontFamily:"'Syne',sans-serif",letterSpacing:"0.08em",
             display:"flex",alignItems:"center",justifyContent:"center",gap:10,
-            transition:"all 0.2s",marginBottom:14
+            transition:"all 0.2s",marginBottom:10
+          }}>
+            <ArrowRight size={17}/> Buy Now
+          </button>
+
+          {/* Add to cart */}
+          <button onClick={handleAdd} style={{
+            width:"100%",padding:"15px",borderRadius:"var(--r)",
+            background:"transparent",
+            color:"var(--text)",fontSize:14,fontWeight:600,
+            fontFamily:"'Syne',sans-serif",letterSpacing:"0.06em",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:10,
+            transition:"all 0.2s",marginBottom:14,
+            border:"1px solid var(--border)"
           }}>
             {added ? <><Check size={17}/> Added to Bag!</> : <><ShoppingBag size={17}/> Add to Bag</>}
           </button>
@@ -975,7 +991,7 @@ export default function App() {
             </button>
           </div>
         </nav>
-        <ProductPage product={activeProduct} onClose={closeProduct} onAddToCart={(p,s,c)=>{addToCart(p,s,c);}}/>
+        <ProductPage product={activeProduct} onClose={closeProduct} onAddToCart={(p,s,c)=>{addToCart(p,s,c);}} onBuyNow={(p,s,c)=>{addToCart(p,s,c);setCartOpen(false);setPage("checkout");}}/>
         {cartOpen&&<CartDrawer cart={cart} onClose={()=>setCartOpen(false)} onCheckout={()=>{setCartOpen(false);setPage("checkout");}} onUpdateQty={updateQty} onRemoveItem={removeItem}/>}
       </>
     );
@@ -1075,7 +1091,7 @@ export default function App() {
             </div>
           </button>
           <div className="nav-links" style={{ gap:32,fontSize:12,fontWeight:500,color:"var(--muted)" }}>
-            {["Shop","About","Contact"].map(l=>(
+            {["Shop"].map(l=>(
               <a key={l} href={l==="Shop"?"#collection":"#"} style={{ transition:"color 0.15s",letterSpacing:"0.06em" }} onMouseEnter={e=>e.currentTarget.style.color="var(--text)"} onMouseLeave={e=>e.currentTarget.style.color="var(--muted)"}>{l}</a>
             ))}
           </div>
@@ -1091,7 +1107,7 @@ export default function App() {
         </div>
         {mobileNav&&(
           <div style={{ borderTop:"1px solid var(--border)",padding:"16px 0",display:"flex",flexDirection:"column",gap:2 }}>
-            {["Shop","About","Contact"].map(l=>(
+            {["Shop"].map(l=>(
               <a key={l} href={l==="Shop"?"#collection":"#"} onClick={()=>setMobileNav(false)} style={{ padding:"12px 4px",fontSize:15,fontWeight:600,color:"var(--muted)",letterSpacing:"0.04em",transition:"color 0.15s",fontFamily:"'Syne',sans-serif" }}>{l}</a>
             ))}
           </div>
